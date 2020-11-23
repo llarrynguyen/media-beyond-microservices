@@ -1,0 +1,11 @@
+{
+	"port": "8002",
+	"log_filename": "logs/server.log",
+	"log_max_size": 10,
+	"log_max_backups": 5,
+	"log_max_age": 30,
+	"db_addr": "xmedia-user-db",
+	"db_name": "xmedia_users",
+	"db_username": "root",
+	"db_password": "root"
+}

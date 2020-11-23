@@ -1,0 +1,106 @@
+version: '3.1'
+
+services:
+  # TV SHOW SERVICE
+  xmedia-tvshows-svc:
+    container_name: xmedia-tvshows-svc
+    build: ./tvshow
+    links:
+      - xmedia-tvshow-db
+    labels:
+      - traefik.http.routers.tvshowsvc.rule=Host("tvshowsvc")
+    ports:
+      - 8001:8001
+    volumes:
+      - /home/y0x/Videos:/data/tvshows
+
+  # TV SHOW DATABASE
+  xmedia-tvshow-db:
+    container_name: xmedia-tvshows-db
+    image: mongo:4.2.3
+    labels:
+      - traefik.enable=false
+    ports:
+      - 27017:27017
+
+  # USER SERVICE
+  xmedia-user-svc:
+    container_name: xmedia-user-svc
+    build: ./user
+    links:
+      - xmedia-user-db
+    labels:
+      - traefik.http.routers.usersvc.rule=Host("usersvc")
+    ports:
+      - 8002:8002
+
+  # USER DATABASE
+  xmedia-user-db:
+    container_name: xmedia-user-db
+    image: mysql:8.0.20
+    labels:
+      - traefik.enable=false
+    ports:
+      - 3306:3306
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=xmedia_users
+    volumes:
+      - ./user/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # AUTHENTICATION SERVICE
+  xmedia-auth-svc:
+    container_name: xmedia-auth-svc
+    build: ./auth
+    links:
+      - xmedia-auth-db
+    labels:
+      - traefik.http.routers.authsvc.rule=Host("authsvc")
+    ports:
+      - 8003:8003
+
+  # AUTHENTICATION DATABASE
+  xmedia-auth-db:
+    container_name: xmedia-auth-db
+    image: redis:6.0.5
+    command: redis-server --requirepass redispassword
+    ports:
+      - 6379:6379
+
+  # MOVIE SERVICE
+  xmedia-movie-svc:
+    container_name: xmedia-movie-svc
+    build: ./movie-svc
+    links:
+      - xmedia-movie-db
+    labels:
+      - traefik.http.routers.moviesvc.rule=Host("moviesvc")
+    ports:
+      - 8004:8004
+    volumes:
+      - /home/y0x/Videos:/data/movies
+
+  # MOVIE DATABASE
+  xmedia-movie-db:
+    container_name: xmedia-movie-db
+    image: mongo:4.2.3
+    labels:
+      - traefik.enable=false
+    ports:
+      - 27020:27020
+
+  # TRAEFIK
+  reverse-proxy:
+    container_name: traefik
+    # The official v2 Traefik docker image
+    image: traefik:v2.2
+    # Enables the web UI and tells Traefik to listen to docker
+    command: --api.insecure=true --providers.docker
+    ports:
+      # The HTTP port
+      - "80:80"
+      # The Web UI (enabled by --api.insecure=true)
+      - "8080:8080"
+    volumes:
+      # So that Traefik can listen to the Docker events
+      - /var/run/docker.sock:/var/run/docker.sock
